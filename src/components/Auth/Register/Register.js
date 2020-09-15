@@ -27,6 +27,8 @@ function Register() {
   const [userState, setuserState] = useState(user);
   const [errorState, seterrorState] = useState(errors);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
 
   const handleInput = (e) => {
     let target = e.target;
@@ -82,7 +84,7 @@ function Register() {
 
   const onSubmit = (e) => {
     seterrorState(() => []);
-
+    setIsSuccess(false);
     if (checkForm()) {
       setIsLoading(true);
       fire
@@ -133,7 +135,9 @@ function Register() {
       })
       .then(() => {
         setIsLoading(false);
+        setIsSuccess(true);
         console.log("user saved in database");
+
       })
       .catch((servererror) => {
         setIsLoading(false);
@@ -201,6 +205,16 @@ function Register() {
             {formatErrors()}
           </Message>
         )}
+
+          {/* User Registration Success Message */}
+
+          {isSuccess && (
+          <Message success>
+            <h3>Successfully Registered</h3>
+            
+          </Message>
+        )}
+      
       </Grid.Column>
     </Grid>
   );
