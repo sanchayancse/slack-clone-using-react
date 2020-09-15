@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import "./Register.css";
+import fire from "../../../config/fire";
 import {
   Button,
   Form,
@@ -36,9 +38,6 @@ function Register() {
       );
       return false;
     } else if (!checkPassword()) {
-      seterrorState((error) =>
-        error.concat({ message: "Given password not valid" })
-      );
       return false;
     }
     return true;
@@ -55,8 +54,17 @@ function Register() {
 
   const checkPassword = () => {
     if (userState.password.length < 8) {
+      seterrorState((error) =>
+        error.concat({ message: "Password length Should be grater than 8 " })
+      );
+
       return false;
     } else if (userState.password !== userState.confirmpassword) {
+      seterrorState((error) =>
+        error.concat({
+          message: "Password and Confirm Password does note match",
+        })
+      );
       return false;
     }
     return true;
@@ -66,18 +74,25 @@ function Register() {
     return errorState.map((error, index) => <p key={index}>{error.message}</p>);
   };
 
-
   const onSubmit = (e) => {
-      seterrorState(() =>[]);
+    seterrorState(() => []);
+
     if (checkForm()) {
-    } else {
+      fire
+        .auth()
+        .createUserWithEmailAndPassword(userState.email, userState.password)
+        .then((createdUser) => {
+          console.log(createdUser);
+        })
+        .catch((servererror) => {
+          seterrorState((error) => error.concat(servererror));
+          //console.log(servererror);
+        });
     }
   };
 
-  
-
   return (
-    <Grid verticalAlign="middle" textAlign="center">
+    <Grid verticalAlign="middle" textAlign="center" className="grid__form">
       <Grid.Column style={{ maxWidth: "500px" }}>
         <Header as="h2">
           <Icon name="slack" />
