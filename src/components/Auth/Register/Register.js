@@ -10,6 +10,7 @@ import {
   Message,
   Segment,
 } from "semantic-ui-react";
+import { Link } from "react-router-dom";
 
 function Register() {
   let user = {
@@ -215,6 +216,10 @@ function Register() {
           </Message>
         )}
       
+
+      <Message>
+        Already an User? <Link to="/login"> Login </Link>
+      </Message>
       </Grid.Column>
     </Grid>
   );
