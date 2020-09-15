@@ -19,9 +19,15 @@ function Register() {
     confirmpassword: "",
   };
 
+  //create Database into the firebase
+
+  let userCollections = fire.database().ref("users");
+
   let errors = [];
   const [userState, setuserState] = useState(user);
   const [errorState, seterrorState] = useState(errors);
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleInput = (e) => {
     let target = e.target;
     setuserState((currentState) => {
@@ -78,17 +84,61 @@ function Register() {
     seterrorState(() => []);
 
     if (checkForm()) {
+      setIsLoading(true);
       fire
         .auth()
         .createUserWithEmailAndPassword(userState.email, userState.password)
         .then((createdUser) => {
-          console.log(createdUser);
+          //console.log(createdUser);
+          setIsLoading(false);
+          updateUserDetails(createdUser);
         })
         .catch((servererror) => {
+          setIsLoading(false);
           seterrorState((error) => error.concat(servererror));
           //console.log(servererror);
         });
     }
+  };
+
+  const updateUserDetails = (createdUser) => {
+    if (createdUser) {
+      setIsLoading(true);
+      createdUser.user
+        .updateProfile({
+          displayName: userState.username,
+          photoURL: `http://gravatar.com/avatar/${createdUser.user.uid}?d=identicon`,
+        })
+        .then(() => {
+          // console.log(createdUser);
+          setIsLoading(false);
+          saveUser(createdUser);
+        })
+        .catch((servererror) => {
+          setIsLoading(false);
+          seterrorState((error) => error.concat(servererror));
+        });
+    }
+  };
+
+  // Save users in Databse
+
+  const saveUser = (createdUser) => {
+    setIsLoading(true);
+    userCollections
+      .child(createdUser.user.uid)
+      .set({
+        displayName: createdUser.user.displayName,
+        photoURL: createdUser.user.photoURL,
+      })
+      .then(() => {
+        setIsLoading(false);
+        console.log("user saved in database");
+      })
+      .catch((servererror) => {
+        setIsLoading(false);
+        seterrorState((error) => error.concat(servererror));
+      });
   };
 
   return (
@@ -141,7 +191,9 @@ function Register() {
             />
           </Segment>
 
-          <Button>Submit</Button>
+          <Button disabled={isLoading} loading={isLoading}>
+            Submit
+          </Button>
         </Form>
         {errorState.length > 0 && (
           <Message error>
