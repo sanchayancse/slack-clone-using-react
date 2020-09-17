@@ -1,14 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Channels.css";
 import { connect } from "react-redux";
 import { Button, Icon, Menu, Modal, Form, Segment } from "semantic-ui-react";
 import fire from "../../../config/fire";
+import { setChannel } from "../../../store/actioncreator";
 
 const Channels = (props) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [channelAdd, setChannelAdd] = useState({ name: "", description: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const [channelData, setChannelData] = useState([]);
 
   const channel = fire.database().ref("channels");
+
+  useEffect(() => {
+    channel.on("child_added", (snap) => {
+      console.log(snap.val());
+      setChannelData((currentstate) => {
+        let updatedState = [...currentstate];
+        updatedState.push(snap.val());
+        if(updatedState.length === 1){
+          props.selectChannel(updatedState[0])
+        }
+        return updatedState;
+      });
+    });
+
+    return () => channel.off();
+  }, []);
+
+
+  useEffect(()=>{
+    if(channelData.length > 0){
+      props.selectChannel(channelData[0])
+    }
+  },[!props.channel ?channelData : null])
 
   const openModal = () => {
     setModalOpen(true);
@@ -18,16 +44,26 @@ const Channels = (props) => {
     setModalOpen(false);
   };
 
-  
-  const checkForm =()=>{
+  const checkForm = () => {
     return channelAdd && channelAdd.name && channelAdd.description;
-}
+  };
 
+  const displayChannels = () => {
+    if (channelData.length > 0) {
+      return channelData.map((channel) => {
+        return <Menu.Item 
+                key={channel.id}
+                name={channel.name}
+                onClick={()=> props.selectChannel(channel)}
+                active={props.channel &&  channel.id === props.channel.id}
+                ></Menu.Item>;
+      });
+    }
+  };
 
   const onSubmit = () => {
-
-    if(!checkForm()){
-        return ;
+    if (!checkForm()) {
+      return;
     }
 
     const key = channel.push().key;
@@ -42,21 +78,20 @@ const Channels = (props) => {
       },
     };
 
+    setIsLoading(true);
     channel
       .child(key)
       .update(channelss)
       .then(() => {
         setChannelAdd({ name: "", description: "" });
-
+        closeModal();
+        setIsLoading(false);
         console.log("saved to the db");
       })
-      .catch((error)=>{
-          console.log(error)
-
-      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
-
-
 
   const handleInput = (e) => {
     let target = e.target;
@@ -75,10 +110,11 @@ const Channels = (props) => {
           <span>
             <Icon name="exchange" /> Channels
           </span>
-          (0)
+          ({channelData.length})
         </Menu.Item>
+        {displayChannels()}
         <Menu.Item>
-          <span onClick={openModal}>
+          <span className="click" onClick={openModal}>
             <Icon name="add" /> ADD
           </span>
         </Menu.Item>
@@ -108,7 +144,7 @@ const Channels = (props) => {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={onSubmit}>
+          <Button loading={isLoading} onClick={onSubmit}>
             <Icon name="checkmark" /> Add
           </Button>
 
@@ -124,7 +160,17 @@ const Channels = (props) => {
 const mapStateToProps = (state) => {
   return {
     user: state.user.currentUser,
+    channel : state.channel.currentChannel,
   };
 };
 
-export default connect(mapStateToProps)(Channels);
+
+const mapDispatchToProps = (dispatch) =>{
+
+  return{
+    selectChannel : (channel)=>dispatch(setChannel(channel))
+  }
+
+}
+
+export default connect(mapStateToProps,mapDispatchToProps)(Channels);
